@@ -1,28 +1,36 @@
 import Dexie from 'dexie';
 
-// Definimos o nome do banco e a versão. 
-// Subir a versão para 2 é essencial para o navegador aceitar a nova tabela 'odontograma'.
-export const db = new Dexie('ClinicaDB_Final');
+/**
+ * DATABASE CONFIGURATION - ODONTO SCRUM PRO
+ * Versão 5: Inclui suporte total a perfis, odontograma e financeiro.
+ */
+export const db = new Dexie('OdontoProDB_V5');
 
-db.version(2).stores({
-  // Tabela de usuários para Login (Admin vs Paciente)
-  users: '++id, email', 
+db.version(1).stores({
+  // Tabela de Usuários: Guarda credenciais e dados do perfil do paciente
+  // Indices: id (auto), email (para login), role (acesso)
+  users: '++id, email, password, role, nome, telefone, endereco, alergias', 
   
-  // Tabela de pacientes cadastrados pelo Admin
+  // Tabela de Pacientes: Prontuários criados pelo dentista
+  // Indices: id (auto), owner_id (vínculo com admin)
   pacientes: '++id, owner_id, nome, cpf, email_paciente, prontuario',
   
-  // Tabela de consultas vinculadas aos pacientes
+  // Tabela de Agendamentos: Consultas da clínica
+  // Indices: id, data e hora (para validação de conflitos de 30min)
   agendamentos: '++id, owner_id, paciente_id, paciente_nome, email_paciente, data, hora, procedimento',
   
-  // NOVA TABELA: ODONTOGRAMA (Mapa dos dentes)
-  // dente_id: número do dente (ex: 11, 21, 48)
-  // condicao: o que o dente tem (ex: 'carie', 'canal', 'extraido')
-  odontograma: '++id, owner_id, paciente_id, dente_id, condicao, data'
+  // Tabela de Odontograma: Registro visual de cada dente
+  // Indices: id, paciente_id (vínculo com o prontuário)
+  odontograma: '++id, owner_id, paciente_id, dente_id, condicao, data',
+  
+  // Tabela Financeiro: Fluxo de caixa (entradas e saídas)
+  // Indices: id, owner_id, tipo (receita/despesa)
+  financeiro: '++id, owner_id, tipo, valor, categoria, data'
 });
 
 /**
- * Função para transformar senha em Hash SHA-256.
- * Garante que a senha não seja salva em texto puro no IndexedDB.
+ * SEGURANÇA: Transforma a senha em Hash SHA-256
+ * Garante que a senha não fique em texto puro no navegador.
  */
 export async function hashPassword(password) {
   const msgUint8 = new TextEncoder().encode(password);
